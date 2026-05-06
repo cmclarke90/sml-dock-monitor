@@ -20,23 +20,6 @@ sensor network for Smith Mountain Lake, VA.
 
 No API key required.
 
-## Hardware
-
-| Part | Notes |
-|---|---|
-| Raspberry Pi Zero 2 W | Main compute board |
-| 2x HT16K33 4-digit 7-segment display | One per stat, I2C |
-| 32GB microSD | OS + script |
-| 5V 2.5A micro USB power supply | CanaKit or equivalent |
-| IP65 project enclosure | Weatherproofing (Phase 3) |
-
-## Project Phases
-
-- ✅ **Phase 1** — Data validation (Python script, runs on any machine)
-- 🔲 **Phase 2** — Pi + display prototype (indoors, no enclosure)
-- 🔲 **Phase 3** — Enclosure + weatherproofing
-- 🔲 **Phase 4** — Deploy to dock
-
 ## Setup
 
 ### Requirements
