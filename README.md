@@ -66,9 +66,6 @@ sudo systemctl enable sml-monitor
 sudo systemctl start sml-monitor
 ```
 
-## Wiring
-
-See [docs/wiring.md](docs/wiring.md).
 
 ## License
 
