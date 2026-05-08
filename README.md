@@ -5,20 +5,30 @@ water level and temperature. Designed to sit on a dock or countertop.
 
 ## What It Shows
 
-- **Lake level** — current AEP forebay reading in feet, with delta vs. full pond (795.0 ft)
-- **Water temperature** — Becky's Creek sensor reading in °F
-
-Both values update automatically every 5 minutes.
+- **Lake level** — current AEP forebay reading in feet, with delta vs. full pond (795.0 ft), updates every ~5 minutes
+- **Water temperature** — Becky's Creek sensor reading in °F, updates hourly
 
 ## Data Source
 
 All data comes from the [SML+ app](https://app.sml.plus) API — a community-built
-sensor network for Smith Mountain Lake, VA.
+sensor network for Smith Mountain Lake, VA. No API key required.
 
-- Lake level source: AEP (Appalachian Power), updates every ~5 minutes
-- Water temp source: Becky's Creek physical sensor, updates hourly
+## Hardware
 
-No API key required.
+| Part | Notes |
+|---|---|
+| Raspberry Pi Zero 2 W | Main compute board |
+| 2x HT16K33 4-digit 7-segment display (0.56") | One per stat, I2C |
+| 32GB microSD | OS + script |
+| 5V 2.5A micro USB power supply | CanaKit or equivalent |
+| IP65 project enclosure | Weatherproofing (Phase 3) |
+
+## Project Phases
+
+- ✅ **Phase 1** — Data validation (Python script, runs on any machine)
+- 🔲 **Phase 2** — Pi + display prototype (indoors, no enclosure)
+- 🔲 **Phase 3** — Enclosure + weatherproofing
+- 🔲 **Phase 4** — Deploy to dock
 
 ## Setup
 
@@ -48,7 +58,7 @@ Create a systemd service so the script starts automatically:
 # /etc/systemd/system/sml-monitor.service
 [Unit]
 Description=SML Dock Monitor
-After=network-online.target
+After=network-online.target wifi-connect.service
 Wants=network-online.target
 
 [Service]
@@ -66,6 +76,9 @@ sudo systemctl enable sml-monitor
 sudo systemctl start sml-monitor
 ```
 
+## Wiring
+
+See [docs/wiring.md](docs/wiring.md).
 
 ## License
 
