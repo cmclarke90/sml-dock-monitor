@@ -7,6 +7,7 @@ Refreshes every 3 hours out of respect for the hosted server.
 View 1: Lake level rounded to nearest foot  e.g.  790
 View 2: Deficit from full pond              e.g.   -5
 View 3: Water temperature                   e.g.  61°F
+View 4: Time of last data reading           e.g.  2:08
 Rotates every 30 seconds with a 1-second blank between views.
 """
 
@@ -39,7 +40,6 @@ LETTER_F      = 0x71
 def get_sml_data():
     """
     Fetch current lake level and water temperature from SmithMountainLakeLevel.com.
-
     Returns dict with level_ft, temp_f, diff, change_rate, and timestamps.
     Raises requests.RequestException on network failure.
     """
@@ -67,17 +67,20 @@ def get_sml_data():
 def show_level(data, display):
     """Lake level rounded to nearest foot. e.g. 790"""
     display.fill(0)
+    display.colon = False
     display.print(str(round(data['level_ft'])))
 
 def show_deficit(data, display):
     """Deficit from full pond rounded to nearest foot. e.g. -5"""
     display.fill(0)
+    display.colon = False
     display.print(str(round(data['diff'])))
 
 def show_temp(data, display):
     """Temperature with degree symbol and F. e.g. 61°F
     If temp is outside 0-99 range (bad reading), shows dashes."""
     display.fill(0)
+    display.colon = False
     temp = round(data['temp_f'])
 
     if temp < 0 or temp > 99:
@@ -93,14 +96,41 @@ def show_temp(data, display):
     display.set_digit_raw(3, LETTER_F)
     display.show()
 
+def show_time(data, display):
+    """Time of last reading in 12-hour format with colon. e.g. 2:08"""
+    display.fill(0)
+    try:
+        dt = datetime.fromisoformat(data['level_ts'])
+        hour_12 = dt.hour % 12 or 12  # converts 0 to 12 for midnight
+        minute  = dt.minute
+
+        hour_tens = hour_12 // 10
+        hour_ones = hour_12 % 10
+        min_tens  = minute // 10
+        min_ones  = minute % 10
+
+        # Single digit hours get a blank first digit so 2:08 not 02:08
+        display.set_digit_raw(0, DIGITS[hour_tens] if hour_12 >= 10 else 0x00)
+        display.set_digit_raw(1, DIGITS[hour_ones])
+        display.set_digit_raw(2, DIGITS[min_tens])
+        display.set_digit_raw(3, DIGITS[min_ones])
+        display.colon = True
+        display.show()
+
+    except Exception as e:
+        print(f"  Warning: Could not parse timestamp ({e})")
+        display.colon = False
+        display.print("----")
+
 def show_blank(display):
     display.fill(0)
+    display.colon = False
 
 def rotate_display(data, display, total_seconds):
-    """Cycle through all three views with a blank pause between each."""
+    """Cycle through all four views with a blank pause between each."""
     elapsed = 0
     view = 0
-    views = [show_level, show_deficit, show_temp]
+    views = [show_level, show_deficit, show_temp, show_time]
 
     while elapsed < total_seconds:
         views[view](data, display)
@@ -111,7 +141,7 @@ def rotate_display(data, display, total_seconds):
         time.sleep(PAUSE_SEC)
         elapsed += PAUSE_SEC
 
-        view = (view + 1) % 3
+        view = (view + 1) % len(views)
 
 # ── Main Loop ──────────────────────────────────────────────────────────────────
 
