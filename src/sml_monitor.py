@@ -4,11 +4,11 @@ SML Dock Monitor
 Data source: SmithMountainLakeLevel.com (XML, updated ~hourly)
 Refresh: every 3 hours — please do not reduce, per data owner's request
 
-Display rotation (30s each, 1s blank between):
-  1. Lake level rounded to nearest foot    e.g.  790
-  2. Deficit from full pond                e.g.   -5  (FULL if diff >= 0)
-  3. Water temperature                     e.g.  61°F
-  4. Time of last reading                  e.g.  9:05
+Display rotation (20s each, 1s blank between):
+  1. Lake level to one decimal    e.g.  7905 + ampm dot = 790.5
+  2. Deficit from full pond       e.g.   _-47 + ampm dot = -4.7  (FULL if diff >= 0)
+  3. Water temperature            e.g.  61°F
+  4. Time of last reading         e.g.  9:05
 """
 
 import time
@@ -17,19 +17,19 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 import board
 import busio
-from adafruit_ht16k33.segments import Seg7x4
+from adafruit_ht16k33.segments import BigSeg7x4
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 API_URL     = "http://SmithMountainLakeLevel.com/CurrentLevel.xml"
 FULL_POND   = 795.0
 REFRESH_SEC = 10800  # 3 hours — please do not reduce, per data owner's request
-ROTATE_SEC  = 30
+ROTATE_SEC  = 20
 PAUSE_SEC   = 1
 
 HEADERS = {"User-Agent": "SML-Dock-Monitor/1.0"}
 
-# ── Segment bitmasks ───────────────────────────────────────────────────────────
+# ── Segment bitmasks ──────────────────────────────────────────────────────────
 
 DIGITS        = [0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F]
 DEGREE_SYMBOL = 0x63
@@ -59,37 +59,49 @@ def get_sml_data():
 # ── Display Views ──────────────────────────────────────────────────────────────
 
 def show_level(data, display):
-    """Lake level rounded to nearest foot. e.g. 790"""
+    """Lake level to one decimal. 790.5 shown as 7905 + ampm dot."""
     display.fill(0)
-    display.colon = False
-    display.print(str(round(data['level_ft'])))
+    level_tenths = int(round(data['level_ft'] * 10))
+    display.print(str(level_tenths))
+    display.ampm = True
+    display.show()
 
 def show_deficit(data, display):
     """
-    Deficit from full pond rounded to nearest foot. e.g. -5
-    Shows FULL if lake is at or above full pond.
+    Deficit to one decimal, right-justified. -4.7 shown as _-47 + ampm dot.
+    Shows FULL (no dot) if lake is at or above full pond.
     """
     display.fill(0)
-    display.colon = False
 
     if data['diff'] >= 0:
         display.set_digit_raw(0, LETTER_F)
         display.set_digit_raw(1, LETTER_U)
         display.set_digit_raw(2, LETTER_L)
         display.set_digit_raw(3, LETTER_L)
+        display.ampm = False
         display.show()
         return
 
-    display.print(str(round(data['diff'])))
+    abs_val      = abs(data['diff'])
+    tenths_total = round(abs_val * 10)
+    whole        = tenths_total // 10
+    tenth        = tenths_total % 10
+
+    display.set_digit_raw(0, 0x00)
+    display.set_digit_raw(1, MINUS)
+    display.set_digit_raw(2, DIGITS[whole])
+    display.set_digit_raw(3, DIGITS[tenth])
+    display.ampm = True
+    display.show()
 
 def show_temp(data, display):
     """Temperature with degree symbol and F. e.g. 61°F"""
     display.fill(0)
-    display.colon = False
     temp = round(data['temp_f'])
 
     if temp < 0 or temp > 99:
         print(f"  Warning: Ignoring out-of-range temp ({temp}°F)")
+        display.ampm = False
         display.print("----")
         return
 
@@ -99,6 +111,7 @@ def show_temp(data, display):
     display.set_digit_raw(1, DIGITS[ones])
     display.set_digit_raw(2, DEGREE_SYMBOL)
     display.set_digit_raw(3, LETTER_F)
+    display.ampm = False
     display.show()
 
 def show_time(data, display):
@@ -112,17 +125,18 @@ def show_time(data, display):
         display.set_digit_raw(1, DIGITS[hour_12 % 10])
         display.set_digit_raw(2, DIGITS[minute // 10])
         display.set_digit_raw(3, DIGITS[minute % 10])
-        display.colon = True
+        display.ampm = False
+        display.colon[1] = True
         display.show()
 
     except Exception as e:
         print(f"  Warning: Could not parse time ({e})")
-        display.colon = False
         display.print("----")
 
 def show_blank(display):
     display.fill(0)
-    display.colon = False
+    display.ampm = False
+    display.show()
 
 def rotate_display(data, display, total_seconds):
     elapsed = 0
@@ -151,7 +165,7 @@ def main():
     print("=" * 50)
 
     i2c = busio.I2C(board.SCL, board.SDA)
-    display = Seg7x4(i2c, address=0x70)
+    display = BigSeg7x4(i2c)
 
     last_data = None
 
