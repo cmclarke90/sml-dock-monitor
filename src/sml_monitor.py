@@ -126,7 +126,7 @@ def show_time(data, display):
         display.set_digit_raw(2, DIGITS[minute // 10])
         display.set_digit_raw(3, DIGITS[minute % 10])
         display.ampm = False
-        display.colon[1] = True
+        display.colons[0] = True
         display.show()
 
     except Exception as e:
