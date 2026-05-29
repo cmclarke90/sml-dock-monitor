@@ -21,13 +21,13 @@ from adafruit_ht16k33.segments import BigSeg7x4
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-API_URL     = "http://SmithMountainLakeLevel.com/CurrentLevel.xml"
+API_URL     = [protected]
 FULL_POND   = 795.0
 REFRESH_SEC = 10800  # 3 hours — please do not reduce, per data owner's request
 ROTATE_SEC  = 20
 PAUSE_SEC   = 1
 
-HEADERS = {"User-Agent": "SML-Dock-Monitor/1.0"}
+HEADERS = [protected]
 
 # ── Segment bitmasks ──────────────────────────────────────────────────────────
 
